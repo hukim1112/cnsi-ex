@@ -1,0 +1,7 @@
+.ipynb_checkpoints/
+*.pyc
+detection/
+segmentation/
+annotations/
+checkpoints/
+logs/
