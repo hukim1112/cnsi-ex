@@ -105,15 +105,25 @@ def extract_mask(image_array, labels, segmentations, H, W):
     object_masking(mask_array, segmentations[0], 100) #joint
     object_masking(mask_array, segmentations[1], 200) #joint_gap
     indice = tf.squeeze(tf.where(labels), axis=1)
-    select = tf.random.categorical(tf.math.log([tf.ones_like(indice)/len(indice)]), 1)
-    idx = int(indice[select[0,0]])
-    #idx = tf.cast(idx, tf.int32)
-    patch = image_array[int(H/20)*idx:int(H/10)+int(H/20)*idx,:]
-    mask = mask_array[int(H/20)*idx:int(H/10)+int(H/20)*idx,:]
-    return patch, mask
+
+    patches = []
+    masks = []
+    for idx in indice:
+        patch = image_array[int(H/20)*idx:int(H/10)+int(H/20)*idx,:]
+        patches.append(patch)
+        mask = mask_array[int(H/20)*idx:int(H/10)+int(H/20)*idx,:]
+        masks.append(mask)
+    return patches, masks
+
+    # select = tf.random.categorical(tf.math.log([tf.ones_like(indice)/len(indice)]), 1)
+    # idx = int(indice[select[0,0]])
+    # #idx = tf.cast(idx, tf.int32)
+    # patch = image_array[int(H/20)*idx:int(H/10)+int(H/20)*idx,:]
+    # mask = mask_array[int(H/20)*idx:int(H/10)+int(H/20)*idx,:]
+    # return patch, mask
 
 def segmentation_process(image_id, coco, image_path):
-    image_id = int(image_id.numpy())
+    image_id = int(image_id)
     image = coco.loadImgs(image_id)
     file = image_path + image[0]["path"]
     image_array = cv2.imread(file)[:,:,::-1]
@@ -125,12 +135,12 @@ def segmentation_process(image_id, coco, image_path):
 
     object_boxes = object_bboxes(anns, H, W)
     labels = calculate_patch_labels(object_boxes)
-    patch, mask = extract_mask(image_array, labels, [joints, joint_gaps], H, W)
-    patch = cv2.resize(patch, [512,512], interpolation=cv2.INTER_NEAREST)
-    mask = cv2.resize(mask, [512,512], interpolation=cv2.INTER_NEAREST)
+    patches, masks = extract_mask(image_array, labels, [joints, joint_gaps], H, W)
+    # patch = cv2.resize(patch, [512,512], interpolation=cv2.INTER_NEAREST)
+    # mask = cv2.resize(mask, [512,512], interpolation=cv2.INTER_NEAREST)
     #patches = tf.image.resize(patches, [224, 224])
     #patches = tf.cast(patches, tf.int32)
-    return patch, mask
+    return patches, masks
 
 def load_segmentation(image_ids, coco, image_path, shuffle=False):
     ds = tf.data.Dataset.from_tensor_slices(image_ids)
